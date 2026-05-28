@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting Note Taker — Recorder</title>
+  <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="recorder.css">
+</head>
+<body>
+  <!-- ═══ HEADER ═══ -->
+  <div class="recorder-page">
+    <div class="recorder-card">
+      <div class="header">
+        <div class="header-content">
+          <div class="header-left">
+            <div class="logo-icon">
+              <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+            </div>
+            <div>
+              <div class="header-title">Meeting Note Taker</div>
+              <div class="header-subtitle">Record • Transcribe • Summarize</div>
+            </div>
+          </div>
+          <button class="settings-btn" id="btnSettings" title="Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ═══ MAIN CONTENT ═══ -->
+      <div class="main-content">
+
+        <!-- ── IDLE STATE ── -->
+        <div class="section active" id="sectionIdle">
+          <div class="idle-hero">
+            <div class="idle-illustration">
+              <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+            </div>
+            <h1 class="idle-title">Ready to Record</h1>
+            <p class="idle-subtitle">Capture your meeting with screen recording, system audio, and microphone. Get AI-powered transcriptions and summaries.</p>
+            <button class="btn-primary" id="btnStartRecording">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>
+              <span>Start Recording</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ── RECORDING STATE ── -->
+        <div class="section" id="sectionRecording">
+          <div class="recording-container">
+            <div class="recording-status">
+              <div class="recording-dot"></div>
+              <span class="recording-label">Recording</span>
+            </div>
+            <div class="recording-timer" id="recordingTimer">00:00:00</div>
+            <div class="waveform" id="waveform">
+              <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+              <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+              <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+              <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+            </div>
+            <div class="recording-info">
+              <div class="recording-info-item">
+                <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                <span>Screen</span>
+              </div>
+              <div class="recording-info-item">
+                <svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                <span>System Audio</span>
+              </div>
+              <div class="recording-info-item">
+                <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/></svg>
+                <span>Microphone</span>
+              </div>
+            </div>
+            <button class="btn-danger" id="btnStopRecording">
+              <svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+              Stop Recording
+            </button>
+          </div>
+        </div>
+
+        <!-- ── REVIEW STATE ── -->
+        <div class="section" id="sectionReview">
+          <div class="review-header">
+            <h2 class="review-title">Recording Complete</h2>
+            <span class="review-duration" id="reviewDuration">00:00</span>
+          </div>
+          <p class="review-subtitle">Choose an action below. You can use each option multiple times.</p>
+
+          <div class="action-cards">
+            <div class="action-card" id="btnDownload">
+              <div class="action-card-icon download">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </div>
+              <div class="action-card-text">
+                <h3>Download</h3>
+                <p>Save audio, video, or both to your device</p>
+              </div>
+              <div class="action-card-arrow">
+                <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+            </div>
+
+            <div class="action-card" id="btnTranscribe">
+              <div class="action-card-icon transcribe">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              </div>
+              <div class="action-card-text">
+                <h3>Transcribe & Summarize</h3>
+                <p>AI-powered transcription with meeting notes</p>
+              </div>
+              <div class="action-card-arrow">
+                <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Results Container -->
+          <div class="results-container" id="resultsContainer" style="display:none;">
+            <div class="result-card expanded" id="transcriptCard">
+              <div class="result-card-header" id="transcriptToggle">
+                <div class="result-card-header-left">
+                  <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  <span>Transcript</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <button class="btn-copy" id="btnCopyTranscript" title="Copy transcript">
+                    <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    Copy
+                  </button>
+                  <div class="result-card-toggle">
+                    <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                </div>
+              </div>
+              <div class="result-card-body" id="transcriptContent"></div>
+            </div>
+
+            <div class="result-card expanded" id="summaryCard">
+              <div class="result-card-header" id="summaryToggle">
+                <div class="result-card-header-left">
+                  <svg viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 12 18.469V19a3.374 3.374 0 0 0-.936-1.264l-.548-.547z"/></svg>
+                  <span>Meeting Summary</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <button class="btn-copy" id="btnCopySummary" title="Copy summary">
+                    <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    Copy
+                  </button>
+                  <div class="result-card-toggle">
+                    <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                </div>
+              </div>
+              <div class="result-card-body summary-content" id="summaryContent"></div>
+            </div>
+          </div>
+
+          <!-- Processing Indicator -->
+          <div class="loading-container" id="processingIndicator" style="display:none;">
+            <div class="loading-spinner"></div>
+            <div class="loading-text" id="processingText">Transcribing audio...</div>
+            <div class="loading-subtext" id="processingSubtext">This may take a moment depending on recording length</div>
+          </div>
+
+          <button class="btn-session-end" id="btnEndSession">
+            <svg viewBox="0 0 24 24"><path d="M18.36 6.64A9 9 0 1 1 5.64 6.64"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+            End Session & Clear Data
+          </button>
+        </div>
+
+        <!-- ── SETTINGS PANEL ── -->
+        <div class="settings-panel" id="settingsPanel">
+          <button class="settings-back" id="btnSettingsBack">
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+            Back
+          </button>
+          <h2 class="settings-title">API Settings</h2>
+          <p class="settings-subtitle">Enter your API keys to enable transcription and summarization.</p>
+
+          <div class="settings-field">
+            <label>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+              Deepgram API Key
+            </label>
+            <input type="password" class="settings-input" id="inputDeepgramKey" placeholder="Enter your Deepgram API key">
+          </div>
+
+          <div class="settings-field">
+            <label>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+              OpenAI API Key
+            </label>
+            <input type="password" class="settings-input" id="inputOpenaiKey" placeholder="Enter your OpenAI API key">
+          </div>
+
+          <button class="settings-save" id="btnSaveSettings">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DOWNLOAD MODAL ═══ -->
+  <div class="modal-overlay" id="downloadModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Download Recording</h3>
+        <button class="modal-close" id="btnCloseDownload">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="download-options">
+          <div class="download-option" data-type="audio">
+            <div class="download-option-icon">
+              <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </div>
+            <div class="download-option-text">
+              <h4>Audio Only</h4>
+              <p>Download audio recording (.webm)</p>
+            </div>
+          </div>
+          <div class="download-option" data-type="video">
+            <div class="download-option-icon">
+              <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/></svg>
+            </div>
+            <div class="download-option-text">
+              <h4>Video Only</h4>
+              <p>Download screen recording (.webm)</p>
+            </div>
+          </div>
+          <div class="download-option" data-type="both">
+            <div class="download-option-icon">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <div class="download-option-text">
+              <h4>Both</h4>
+              <p>Download audio + video files</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TRANSCRIBE MODAL ═══ -->
+  <div class="modal-overlay" id="transcribeModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Transcribe & Summarize</h3>
+        <button class="modal-close" id="btnCloseTranscribe">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Language</label>
+          <select class="form-select" id="selectLanguage">
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="it">Italian</option>
+            <option value="pt">Portuguese</option>
+            <option value="nl">Dutch</option>
+            <option value="hi">Hindi</option>
+            <option value="ja">Japanese</option>
+            <option value="zh">Chinese</option>
+            <option value="ko">Korean</option>
+            <option value="ru">Russian</option>
+            <option value="ar">Arabic</option>
+            <option value="tr">Turkish</option>
+            <option value="pl">Polish</option>
+            <option value="sv">Swedish</option>
+            <option value="da">Danish</option>
+            <option value="no">Norwegian</option>
+            <option value="fi">Finnish</option>
+            <option value="id">Indonesian</option>
+            <option value="uk">Ukrainian</option>
+            <option value="ta">Tamil</option>
+          </select>
+        </div>
+        <div id="transcribeApiWarning" style="display:none;" class="api-warning">
+          <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div class="api-warning-text">
+            API keys not configured. <a id="linkGoSettings">Go to Settings</a> to add your Deepgram and OpenAI keys.
+          </div>
+        </div>
+        <button class="btn-modal-action" id="btnStartTranscribe">
+          <svg viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 12 18.469V19a3.374 3.374 0 0 0-.936-1.264l-.548-.547z"/></svg>
+          Start Transcription
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TOAST ═══ -->
+  <div class="toast" id="toast"></div>
+
+  <script src="recorder.js"></script>
+</body>
+</html>

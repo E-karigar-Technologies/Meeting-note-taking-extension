@@ -1,0 +1,50 @@
+/* ============================================
+   Recorder Page — Full-Tab Overrides
+   Applies on top of popup.css for full-page layout
+   ============================================ */
+
+/* Override popup body sizing for full page */
+body {
+  width: 100%;
+  min-height: 100vh;
+  max-height: none;
+  overflow-y: auto;
+  background: var(--bg-primary);
+}
+
+/* Centered card layout */
+.recorder-page {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 40px 20px;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(6, 182, 212, 0.04) 0%, transparent 50%),
+    var(--bg-primary);
+}
+
+.recorder-card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-xl);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    0 0 80px rgba(16, 185, 129, 0.03);
+  overflow: hidden;
+}
+
+/* Slightly larger results area for full page */
+.recorder-page .result-card-body {
+  max-height: 320px;
+}
+
+/* Tab title animation */
+@keyframes tabPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
