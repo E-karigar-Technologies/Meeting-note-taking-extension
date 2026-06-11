@@ -40,6 +40,21 @@ const transcribeModal = $('#transcribeModal');
 const btnCloseDownload = $('#btnCloseDownload');
 const btnCloseTranscribe = $('#btnCloseTranscribe');
 
+// Download modal elements (two-step flow)
+const downloadStep1 = $('#downloadStep1');
+const downloadStep2 = $('#downloadStep2');
+const downloadModalTitle = $('#downloadModalTitle');
+const btnDownloadBack = $('#btnDownloadBack');
+const selectedTypeBadge = $('#selectedTypeBadge');
+const inputDownloadTitle = $('#inputDownloadTitle');
+const btnSaveToFolder = $('#btnSaveToFolder');
+
+// Save notes elements
+const btnSaveNotes = $('#btnSaveNotes');
+const saveNotesBar = $('#saveNotesBar');
+const saveNotesStatus = $('#saveNotesStatus');
+const saveNotesStatusText = $('#saveNotesStatusText');
+
 // Inputs
 const inputDeepgramKey = $('#inputDeepgramKey');
 const inputOpenaiKey = $('#inputOpenaiKey');
@@ -83,6 +98,9 @@ let recordingDuration = 0;
 let rawTranscriptText = '';
 let rawSummaryText = '';
 let originalTitle = document.title;
+let meetingTitle = '';
+let meetingDirHandle = null; // FileSystemDirectoryHandle for the meeting folder
+let selectedDownloadType = null; // 'audio' | 'video' | 'both'
 
 // ═══════════════════════════════════════════
 //  API Keys (persisted in chrome.storage)
@@ -303,7 +321,11 @@ async function startRecording() {
       updateTabTitle(`🔴 ${formatTime(recordingDuration)} — Recording`);
     }, 1000);
 
-    // 8. Switch to recording UI
+    // 8. Reset for new recording
+    meetingTitle = '';
+    meetingDirHandle = null;
+
+    // 9. Switch to recording UI
     currentState = 'recording';
     switchSection(sectionRecording);
     updateTabTitle('🔴 Recording...');
@@ -407,10 +429,41 @@ function getAudioMimeType() {
 }
 
 // ═══════════════════════════════════════════
-//  DOWNLOAD
+//  FILE SYSTEM HELPERS
 // ═══════════════════════════════════════════
 
-function downloadBlob(blob, filename) {
+function sanitizeFilename(name) {
+  // Remove characters that are unsafe for filesystem folder/file names
+  return name
+    .replace(/[<>:"/\\|?*]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    || 'Untitled Meeting';
+}
+
+function getDefaultMeetingTitle() {
+  const now = new Date();
+  const date = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  return `Meeting ${date} ${time}`;
+}
+
+async function writeBlobToDirectory(dirHandle, filename, blob) {
+  const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+  const writable = await fileHandle.createWritable();
+  await writable.write(blob);
+  await writable.close();
+}
+
+async function writeTextToDirectory(dirHandle, filename, text) {
+  const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+  const writable = await fileHandle.createWritable();
+  await writable.write(text);
+  await writable.close();
+}
+
+// Fallback download using <a> tag (when File System Access API not available)
+function downloadBlobFallback(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -421,26 +474,171 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
-function handleDownload(type) {
-  const ts = getTimestamp();
-  if (type === 'audio' || type === 'both') {
-    if (audioBlob) {
-      downloadBlob(audioBlob, `meeting-audio-${ts}.webm`);
-    } else {
-      showToast('No audio recording available', 'error');
+// ═══════════════════════════════════════════
+//  DOWNLOAD (Two-Step Folder Picker)
+// ═══════════════════════════════════════════
+
+function showDownloadStep1() {
+  downloadStep1.style.display = 'block';
+  downloadStep2.style.display = 'none';
+  downloadModalTitle.textContent = 'Download Recording';
+}
+
+function showDownloadStep2(type) {
+  selectedDownloadType = type;
+  downloadStep1.style.display = 'none';
+  downloadStep2.style.display = 'block';
+  downloadModalTitle.textContent = 'Save to Folder';
+
+  // Show what was selected
+  const typeLabels = { audio: '🎵 Audio Only', video: '🎬 Video Only', both: '📦 Audio + Video' };
+  selectedTypeBadge.textContent = typeLabels[type] || type;
+
+  // Pre-fill folder name if we have one from a previous save
+  if (!inputDownloadTitle.value.trim()) {
+    inputDownloadTitle.value = meetingTitle || '';
+  }
+  inputDownloadTitle.focus();
+}
+
+async function handleSaveToFolder() {
+  const title = inputDownloadTitle.value.trim();
+  if (!title) {
+    showToast('Please enter a folder name', 'error');
+    inputDownloadTitle.focus();
+    return;
+  }
+
+  const type = selectedDownloadType;
+  const wantAudio = type === 'audio' || type === 'both';
+  const wantVideo = type === 'video' || type === 'both';
+
+  if (wantAudio && !audioBlob) {
+    showToast('No audio recording available', 'error');
+    return;
+  }
+  if (wantVideo && !videoBlob) {
+    showToast('No video recording available', 'error');
+    return;
+  }
+
+  // Check if File System Access API is available
+  if (!('showDirectoryPicker' in window)) {
+    showToast('Folder picker not supported — downloading to default location', 'info');
+    const ts = getTimestamp();
+    if (wantAudio && audioBlob) downloadBlobFallback(audioBlob, `${sanitizeFilename(title)}-audio.webm`);
+    if (wantVideo && videoBlob) downloadBlobFallback(videoBlob, `${sanitizeFilename(title)}-video.webm`);
+    hideModal(downloadModal);
+    return;
+  }
+
+  try {
+    // Let user pick a parent directory (suggest Desktop as start)
+    const parentDirHandle = await window.showDirectoryPicker({
+      mode: 'readwrite',
+      startIn: 'desktop'
+    });
+
+    // Create subfolder with folder name
+    const folderName = sanitizeFilename(title);
+    meetingDirHandle = await parentDirHandle.getDirectoryHandle(folderName, { create: true });
+    meetingTitle = title;
+
+    // Write files
+    const ts = getTimestamp();
+    let savedCount = 0;
+
+    if (wantAudio && audioBlob) {
+      await writeBlobToDirectory(meetingDirHandle, `audio-${ts}.webm`, audioBlob);
+      savedCount++;
+    }
+
+    if (wantVideo && videoBlob) {
+      await writeBlobToDirectory(meetingDirHandle, `video-${ts}.webm`, videoBlob);
+      savedCount++;
+    }
+
+    showToast(`${savedCount} file${savedCount > 1 ? 's' : ''} saved to "${folderName}" folder!`);
+    hideModal(downloadModal);
+    showDownloadStep1(); // Reset for next time
+
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    console.error('Folder download failed:', err);
+    showToast('Failed to save files: ' + err.message, 'error');
+  }
+}
+
+// Save transcript and summary text files to the meeting folder
+async function saveNotesToFolder() {
+  if (!rawTranscriptText && !rawSummaryText) {
+    showToast('No transcript or summary to save', 'error');
+    return;
+  }
+
+  try {
+    // If folder already exists from a previous download, save directly
+    if (meetingDirHandle) {
+      let savedCount = 0;
+      if (rawTranscriptText) {
+        await writeTextToDirectory(meetingDirHandle, 'transcript.txt', rawTranscriptText);
+        savedCount++;
+      }
+      if (rawSummaryText) {
+        await writeTextToDirectory(meetingDirHandle, 'summary.txt', rawSummaryText);
+        savedCount++;
+      }
+      saveNotesStatus.style.display = 'flex';
+      saveNotesStatusText.textContent = `${savedCount} file${savedCount > 1 ? 's' : ''} saved to "${sanitizeFilename(meetingTitle)}" folder`;
+      showToast(`Notes saved to "${sanitizeFilename(meetingTitle)}" folder!`);
       return;
     }
-  }
-  if (type === 'video' || type === 'both') {
-    if (videoBlob) {
-      downloadBlob(videoBlob, `meeting-video-${ts}.webm`);
-    } else {
-      showToast('No video recording available', 'error');
+
+    // No folder yet — ask for folder name first
+    const folderName = prompt('Enter folder name for saving notes:');
+    if (!folderName || !folderName.trim()) return;
+
+    if (!('showDirectoryPicker' in window)) {
+      // Fallback: download as text files
+      showToast('Folder picker not supported — downloading files', 'info');
+      const safeName = sanitizeFilename(folderName.trim());
+      if (rawTranscriptText) {
+        downloadBlobFallback(new Blob([rawTranscriptText], { type: 'text/plain' }), `${safeName}-transcript.txt`);
+      }
+      if (rawSummaryText) {
+        downloadBlobFallback(new Blob([rawSummaryText], { type: 'text/plain' }), `${safeName}-summary.txt`);
+      }
       return;
     }
+
+    // Open folder picker
+    const parentDirHandle = await window.showDirectoryPicker({
+      mode: 'readwrite',
+      startIn: 'desktop'
+    });
+    const safeFolderName = sanitizeFilename(folderName.trim());
+    meetingDirHandle = await parentDirHandle.getDirectoryHandle(safeFolderName, { create: true });
+    meetingTitle = folderName.trim();
+
+    let savedCount = 0;
+    if (rawTranscriptText) {
+      await writeTextToDirectory(meetingDirHandle, 'transcript.txt', rawTranscriptText);
+      savedCount++;
+    }
+    if (rawSummaryText) {
+      await writeTextToDirectory(meetingDirHandle, 'summary.txt', rawSummaryText);
+      savedCount++;
+    }
+
+    saveNotesStatus.style.display = 'flex';
+    saveNotesStatusText.textContent = `${savedCount} file${savedCount > 1 ? 's' : ''} saved to "${safeFolderName}" folder`;
+    showToast(`Notes saved to "${safeFolderName}" folder!`);
+
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    console.error('Save notes failed:', err);
+    showToast('Failed to save notes: ' + err.message, 'error');
   }
-  showToast(type === 'both' ? 'Downloads started!' : `${type.charAt(0).toUpperCase() + type.slice(1)} download started!`);
-  hideModal(downloadModal);
 }
 
 // ═══════════════════════════════════════════
@@ -512,6 +710,30 @@ async function transcribeAndSummarize() {
 
     transcriptCard.classList.add('expanded');
     summaryCard.classList.add('expanded');
+
+    // Reset save notes status for fresh results
+    saveNotesStatus.style.display = 'none';
+
+    // ── Step 5: Auto-save to meeting folder if available ──
+    if (meetingDirHandle) {
+      try {
+        processingText.textContent = 'Saving notes to meeting folder...';
+        processingSubtext.textContent = '';
+
+        if (rawTranscriptText) {
+          await writeTextToDirectory(meetingDirHandle, 'transcript.txt', rawTranscriptText);
+        }
+        if (rawSummaryText) {
+          await writeTextToDirectory(meetingDirHandle, 'summary.txt', rawSummaryText);
+        }
+
+        saveNotesStatus.style.display = 'flex';
+        saveNotesStatusText.textContent = 'Notes auto-saved to meeting folder';
+      } catch (autoSaveErr) {
+        console.warn('Auto-save to folder failed:', autoSaveErr);
+        // Not critical — user can still manually save
+      }
+    }
 
     updateTabTitle('✅ Done — Meeting Note Taker');
     showToast('Transcription & summary complete!');
@@ -667,6 +889,9 @@ function endSession() {
   audioBlob = null;
   rawTranscriptText = '';
   rawSummaryText = '';
+  meetingTitle = '';
+  selectedDownloadType = null;
+  meetingDirHandle = null;
 
   recordingTimer.textContent = '00:00:00';
   reviewDuration.textContent = '00:00';
@@ -716,16 +941,44 @@ async function copyToClipboard(text, label) {
 btnStartRecording.addEventListener('click', startRecording);
 btnStopRecording.addEventListener('click', stopRecording);
 
-// Download
-btnDownload.addEventListener('click', () => showModal(downloadModal));
-btnCloseDownload.addEventListener('click', () => hideModal(downloadModal));
+// Download (two-step modal)
+btnDownload.addEventListener('click', () => {
+  showDownloadStep1(); // Always start at step 1
+  showModal(downloadModal);
+});
+btnCloseDownload.addEventListener('click', () => {
+  hideModal(downloadModal);
+  showDownloadStep1(); // Reset to step 1
+});
 downloadModal.addEventListener('click', (e) => {
-  if (e.target === downloadModal) hideModal(downloadModal);
+  if (e.target === downloadModal) {
+    hideModal(downloadModal);
+    showDownloadStep1();
+  }
 });
 
+// Download step 1: pick type → go to step 2
 $$('.download-option').forEach(opt => {
-  opt.addEventListener('click', () => handleDownload(opt.dataset.type));
+  opt.addEventListener('click', () => {
+    const type = opt.dataset.type;
+    // Validate availability
+    if ((type === 'audio' || type === 'both') && !audioBlob) {
+      showToast('No audio recording available', 'error');
+      return;
+    }
+    if ((type === 'video' || type === 'both') && !videoBlob) {
+      showToast('No video recording available', 'error');
+      return;
+    }
+    showDownloadStep2(type);
+  });
 });
+
+// Download step 2: back button
+btnDownloadBack.addEventListener('click', showDownloadStep1);
+
+// Download step 2: save to folder
+btnSaveToFolder.addEventListener('click', handleSaveToFolder);
 
 // Transcribe
 btnTranscribe.addEventListener('click', () => {
@@ -776,6 +1029,9 @@ btnCopySummary.addEventListener('click', (e) => {
   e.stopPropagation();
   copyToClipboard(rawSummaryText, 'Summary');
 });
+
+// Save notes to folder
+btnSaveNotes.addEventListener('click', saveNotesToFolder);
 
 // ═══════════════════════════════════════════
 //  INITIALIZATION

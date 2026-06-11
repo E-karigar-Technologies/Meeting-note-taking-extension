@@ -156,6 +156,18 @@
               </div>
               <div class="result-card-body summary-content" id="summaryContent"></div>
             </div>
+
+            <!-- Save Notes to Folder -->
+            <div class="save-notes-bar" id="saveNotesBar">
+              <button class="btn-save-notes" id="btnSaveNotes">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                Save Notes to Meeting Folder
+              </button>
+              <div class="save-notes-status" id="saveNotesStatus" style="display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                <span id="saveNotesStatusText"></span>
+              </div>
+            </div>
           </div>
 
           <!-- Processing Indicator -->
@@ -204,42 +216,62 @@
 
   <!-- ═══ DOWNLOAD MODAL ═══ -->
   <div class="modal-overlay" id="downloadModal">
-    <div class="modal">
+    <div class="modal modal-download">
       <div class="modal-header">
-        <h3 class="modal-title">Download Recording</h3>
+        <h3 class="modal-title" id="downloadModalTitle">Download Recording</h3>
         <button class="modal-close" id="btnCloseDownload">
           <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       <div class="modal-body">
-        <div class="download-options">
-          <div class="download-option" data-type="audio">
-            <div class="download-option-icon">
-              <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <!-- Step 1: Choose file type -->
+        <div id="downloadStep1">
+          <div class="download-options">
+            <div class="download-option" data-type="audio">
+              <div class="download-option-icon">
+                <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              </div>
+              <div class="download-option-text">
+                <h4>Audio Only</h4>
+                <p>Download audio recording (.webm)</p>
+              </div>
             </div>
-            <div class="download-option-text">
-              <h4>Audio Only</h4>
-              <p>Download audio recording (.webm)</p>
+            <div class="download-option" data-type="video">
+              <div class="download-option-icon">
+                <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+              </div>
+              <div class="download-option-text">
+                <h4>Video Only</h4>
+                <p>Download screen recording (.webm)</p>
+              </div>
+            </div>
+            <div class="download-option" data-type="both">
+              <div class="download-option-icon">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </div>
+              <div class="download-option-text">
+                <h4>Both</h4>
+                <p>Download audio + video files</p>
+              </div>
             </div>
           </div>
-          <div class="download-option" data-type="video">
-            <div class="download-option-icon">
-              <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/></svg>
-            </div>
-            <div class="download-option-text">
-              <h4>Video Only</h4>
-              <p>Download screen recording (.webm)</p>
-            </div>
+        </div>
+
+        <!-- Step 2: Enter folder name -->
+        <div id="downloadStep2" style="display:none;">
+          <button class="modal-back-btn" id="btnDownloadBack">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            Back
+          </button>
+          <div class="selected-type-badge" id="selectedTypeBadge"></div>
+          <div class="modal-field">
+            <label class="modal-field-label">Folder Name</label>
+            <input type="text" class="modal-field-input" id="inputDownloadTitle" placeholder="e.g. Sprint Planning - June 11">
           </div>
-          <div class="download-option" data-type="both">
-            <div class="download-option-icon">
-              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            </div>
-            <div class="download-option-text">
-              <h4>Both</h4>
-              <p>Download audio + video files</p>
-            </div>
-          </div>
+          <button class="btn-modal-action" id="btnSaveToFolder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Choose Location & Save
+          </button>
         </div>
       </div>
     </div>
